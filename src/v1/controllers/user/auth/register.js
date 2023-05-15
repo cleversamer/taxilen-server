@@ -11,8 +11,17 @@ const _ = require("lodash");
 
 module.exports.registerWithEmailAndPhone = async (req, res, next) => {
   try {
-    const { lang, name, email, phoneICC, phoneNSN, password, deviceToken } =
-      req.body;
+    const {
+      lang,
+      name,
+      email,
+      phoneICC,
+      phoneNSN,
+      password,
+      deviceToken,
+      referralCode,
+      socketId,
+    } = req.body;
 
     // Create the user
     const { user, isAlreadyRegistered } = await authService.registerWithEmail(
@@ -24,6 +33,18 @@ module.exports.registerWithEmailAndPhone = async (req, res, next) => {
       deviceToken,
       lang
     );
+
+    // Create response object
+    const response = {
+      user: _.pick(user, clientSchema),
+      token: user.genAuthToken(),
+    };
+
+    // Send response back to the client
+    res.status(httpStatus.CREATED).json(response);
+
+    // Connect user's socket to their own room
+    usersService.joinSocketToUserRoom(socketId, user._id);
 
     if (isAlreadyRegistered) {
       // Parse client data
@@ -52,6 +73,21 @@ module.exports.registerWithEmailAndPhone = async (req, res, next) => {
         user.getEmail(),
         user.getName()
       );
+
+      // Check for referral code
+      const referralCodeOwner = await usersService.applyReferralCode(
+        user,
+        referralCode
+      );
+
+      // Send notification to the referral code owner
+      if (referralCodeOwner) {
+        const notification = userNotifications.referredUser();
+        await usersService.sendNotification(
+          [referralCodeOwner._id],
+          notification
+        );
+      }
     }
 
     if (!user.isEmailVerified()) {
@@ -78,15 +114,6 @@ module.exports.registerWithEmailAndPhone = async (req, res, next) => {
     if (!user.isPhoneVerified()) {
       // TODO: send phone activation code to user's phone.
     }
-
-    // Create response object
-    const response = {
-      user: _.pick(user, clientSchema),
-      token: user.genAuthToken(),
-    };
-
-    // Send response back to the client
-    res.status(httpStatus.CREATED).json(response);
   } catch (err) {
     next(err);
   }
@@ -94,7 +121,8 @@ module.exports.registerWithEmailAndPhone = async (req, res, next) => {
 
 module.exports.registerWithGoogle = async (req, res, next) => {
   try {
-    const { lang, googleToken, phoneICC, phoneNSN, deviceToken } = req.body;
+    const { lang, googleToken, phoneICC, phoneNSN, deviceToken, socketId } =
+      req.body;
 
     // Create the user
     const { user, isAlreadyRegistered } = await authService.registerWithGoogle(
@@ -104,6 +132,18 @@ module.exports.registerWithGoogle = async (req, res, next) => {
       deviceToken,
       lang
     );
+
+    // Create the response object
+    const response = {
+      user: _.pick(user, clientSchema),
+      token: user.genAuthToken(),
+    };
+
+    // Send response back to the client
+    res.status(httpStatus.CREATED).json(response);
+
+    // Connect user's socket to their own room
+    usersService.joinSocketToUserRoom(socketId, user._id);
 
     // Check if user is alredy registered
     // If yes, then send login activity email to user
@@ -134,18 +174,24 @@ module.exports.registerWithGoogle = async (req, res, next) => {
         user.getEmail(),
         user.getName()
       );
+
+      // Check for referral code
+      const referralCodeOwner = await usersService.applyReferralCode(
+        user,
+        referralCode
+      );
+
+      // Send notification to the referral code owner
+      if (referralCodeOwner) {
+        const notification = userNotifications.referredUser();
+        await usersService.sendNotification(
+          [referralCodeOwner._id],
+          notification
+        );
+      }
     }
 
     // TODO: send phone activation code to user's phone.
-
-    // Create the response object
-    const response = {
-      user: _.pick(user, clientSchema),
-      token: user.genAuthToken(),
-    };
-
-    // Send response back to the client
-    res.status(httpStatus.CREATED).json(response);
   } catch (err) {
     next(err);
   }

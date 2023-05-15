@@ -7,7 +7,7 @@ const success = require("../../../config/success");
 module.exports.authenticateUser = async (req, res, next) => {
   try {
     const user = req.user;
-    const { lang, deviceToken } = req.query;
+    const { lang, deviceToken, socketId } = req.query;
 
     const newUser = await usersService.authenticateUser(
       user,
@@ -20,6 +20,9 @@ module.exports.authenticateUser = async (req, res, next) => {
 
     // Send response back to the client
     res.status(httpStatus.OK).json(response);
+
+    // Connect user's socket to their own room
+    usersService.joinSocketToUserRoom(socketId, user._id);
   } catch (err) {
     next(err);
   }
@@ -32,6 +35,15 @@ module.exports.updateEmail = async (req, res, next) => {
 
     // Asking service to update user's profile data
     const updatedUser = await usersService.updateEmail(user, email);
+
+    // Create the response object
+    const response = {
+      user: _.pick(updatedUser, clientSchema),
+      token: updatedUser.genAuthToken(),
+    };
+
+    // Send response back to the client
+    res.status(httpStatus.CREATED).json(response);
 
     // Construct verification email
     const host = req.get("host");
@@ -50,15 +62,6 @@ module.exports.updateEmail = async (req, res, next) => {
       updatedUser.getName(),
       verificationLink
     );
-
-    // Create the response object
-    const response = {
-      user: _.pick(updatedUser, clientSchema),
-      token: updatedUser.genAuthToken(),
-    };
-
-    // Send response back to the client
-    res.status(httpStatus.CREATED).json(response);
   } catch (err) {
     next(err);
   }
@@ -182,12 +185,52 @@ module.exports.clearNotifications = async (req, res, next) => {
   }
 };
 
+module.exports.disableNotifications = async (req, res, next) => {
+  try {
+    const user = req.user;
+
+    // Asking service to disable notifications for user
+    const updatedUser = await usersService.disableNotifications(user);
+
+    // Create the response object
+    const response = _.pick(updatedUser, clientSchema);
+
+    // Send response back to the client
+    res.status(httpStatus.OK).json(response);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports.enableNotifications = async (req, res, next) => {
+  try {
+    const user = req.user;
+
+    // Asking service to enable notifications for user
+    const updatedUser = await usersService.enableNotifications(user);
+
+    // Create the response object
+    const response = _.pick(updatedUser, clientSchema);
+
+    // Send response back to the client
+    res.status(httpStatus.OK).json(response);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports.requestAccountDeletion = async (req, res, next) => {
   try {
     const user = req.user;
 
     // Asking service to delete all user's notifications
     const newUser = await usersService.requestAccountDeletion(user);
+
+    // Create the response object
+    const response = success.auth.accountDeletionCodeSent;
+
+    // Send response back to the client
+    res.status(httpStatus.OK).json(response);
 
     // Construct deletion link
     const host = req.get("host");
@@ -205,12 +248,6 @@ module.exports.requestAccountDeletion = async (req, res, next) => {
       newUser.getName(),
       deletionLink
     );
-
-    // Create the response object
-    const response = success.auth.accountDeletionCodeSent;
-
-    // Send response back to the client
-    res.status(httpStatus.OK).json(response);
   } catch (err) {
     next(err);
   }
@@ -223,18 +260,18 @@ module.exports.confirmAccountDeletion = async (req, res, next) => {
     // Delete user and their data
     const user = await usersService.confirmAccountDeletion(token, code);
 
+    // Create the response object
+    const response = success.auth.accountDeleted[user.getLanguage()];
+
+    // Send response back to the client
+    res.status(httpStatus.OK).send(response);
+
     // Send an email to the user
     await emailService.sendAccountDeletedEmail(
       user.getLanguage(),
       user.getEmail(),
       user.getName()
     );
-
-    // Create the response object
-    const response = success.auth.accountDeleted[user.getLanguage()];
-
-    // Send response back to the client
-    res.status(httpStatus.OK).send(response);
   } catch (err) {
     next(err);
   }
@@ -252,6 +289,18 @@ module.exports.resendEmailOrPhoneVerificationCode =
         user,
         lang
       );
+
+      // Create the response object
+      const response = {
+        ok: true,
+        message:
+          key === "email"
+            ? success.auth.emailVerificationCodeSent
+            : success.auth.phoneVerificationCodeSent,
+      };
+
+      // Send response back to the client
+      res.status(httpStatus.OK).json(response);
 
       // Sending email or phone verification code to user's email or phone
       if (key === "email") {
@@ -274,18 +323,6 @@ module.exports.resendEmailOrPhoneVerificationCode =
       } else {
         // TODO: send phone verification code to user's phone
       }
-
-      // Create the response object
-      const response = {
-        ok: true,
-        message:
-          key === "email"
-            ? success.auth.emailVerificationCodeSent
-            : success.auth.phoneVerificationCodeSent,
-      };
-
-      // Send response back to the client
-      res.status(httpStatus.OK).json(response);
     } catch (err) {
       next(err);
     }
@@ -299,6 +336,12 @@ module.exports.verifyEmailOrPhone = (key) => async (req, res, next) => {
     // Asking service to verify user's email or phone
     const verifiedUser = await usersService.verifyEmailOrPhone(key, user, code);
 
+    // Create the response object
+    const response = _.pick(verifiedUser, clientSchema);
+
+    // Send response back to the client
+    res.status(httpStatus.OK).json(response);
+
     // Notify user that proccess is accomplished successfully
     // and send a message to user's email or phone
     if (key === "email") {
@@ -310,12 +353,6 @@ module.exports.verifyEmailOrPhone = (key) => async (req, res, next) => {
     } else {
       // TODO: send an SMS message to user's phone
     }
-
-    // Create the response object
-    const response = _.pick(verifiedUser, clientSchema);
-
-    // Send response back to the client
-    res.status(httpStatus.OK).json(response);
   } catch (err) {
     next(err);
   }
@@ -381,18 +418,18 @@ module.exports.verifyEmailByLink = async (req, res, next) => {
 
     const user = await usersService.verifyEmailByLink(token, code);
 
+    // Create the response object
+    const response = success.auth.emailVerified[user.getLanguage()];
+
+    // Send response back to the client
+    res.status(httpStatus.OK).send(response);
+
     // Send email to user
     await emailService.sendEmailVerifiedEmail(
       user.getLanguage(),
       user.getEmail(),
       user.getName()
     );
-
-    // Create the response object
-    const response = success.auth.emailVerified[user.getLanguage()];
-
-    // Send response back to the client
-    res.status(httpStatus.OK).send(response);
   } catch (err) {
     next(err);
   }
@@ -437,18 +474,6 @@ module.exports.sendForgotPasswordCode = async (req, res, next) => {
     // Asking service to update user's password reset code
     const user = await usersService.sendForgotPasswordCode(emailOrPhone);
 
-    // Send password reset code to phone or email
-    if (sendTo === "phone") {
-      // TODO: send forgot password code to user's phone.
-    } else {
-      await emailService.sendForgotPasswordEmail(
-        user.getLanguage(),
-        user.getEmail(),
-        user.getCode("password"),
-        user.getName()
-      );
-    }
-
     // Create the response object
     const response = {
       ok: true,
@@ -460,6 +485,18 @@ module.exports.sendForgotPasswordCode = async (req, res, next) => {
 
     // Send response back to the client
     res.status(httpStatus.OK).json(response);
+
+    // Send password reset code to phone or email
+    if (sendTo === "phone") {
+      // TODO: send forgot password code to user's phone.
+    } else {
+      await emailService.sendForgotPasswordEmail(
+        user.getLanguage(),
+        user.getEmail(),
+        user.getCode("password"),
+        user.getName()
+      );
+    }
   } catch (err) {
     next(err);
   }
@@ -477,18 +514,18 @@ module.exports.handleForgotPassword = async (req, res, next) => {
       newPassword
     );
 
+    // Create the response object
+    const response = _.pick(user, clientSchema);
+
+    // Send response back to the client
+    res.status(httpStatus.OK).json(response);
+
     // Send email to user
     await emailService.sendPasswordChangedEmail(
       user.getLanguage(),
       user.getEmail(),
       user.getName()
     );
-
-    // Create the response object
-    const response = _.pick(user, clientSchema);
-
-    // Send response back to the client
-    res.status(httpStatus.OK).json(response);
   } catch (err) {
     next(err);
   }
@@ -500,7 +537,20 @@ module.exports.changePassword = async (req, res, next) => {
     const { oldPassword, newPassword } = req.body;
 
     // Asking service to change user's password
-    await usersService.changePassword(user, oldPassword, newPassword);
+    const updatedUser = await usersService.changePassword(
+      user,
+      oldPassword,
+      newPassword
+    );
+
+    // Create the response object
+    const response = {
+      user: _.pick(updatedUser, clientSchema),
+      token: updatedUser.genAuthToken(),
+    };
+
+    // Send response back to the client
+    res.status(httpStatus.CREATED).json(response);
 
     // Send email to user
     await emailService.sendPasswordChangedEmail(
@@ -508,15 +558,6 @@ module.exports.changePassword = async (req, res, next) => {
       user.getEmail(),
       user.getName()
     );
-
-    // Create the response object
-    const response = {
-      user: _.pick(user, clientSchema),
-      token: user.genAuthToken(),
-    };
-
-    // Send response back to the client
-    res.status(httpStatus.CREATED).json(response);
   } catch (err) {
     next(err);
   }

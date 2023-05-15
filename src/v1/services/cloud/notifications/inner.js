@@ -14,9 +14,14 @@ module.exports.sendPushNotification = (
   photoURL
 ) => {
   try {
+    // Filter device token
+    //
+    // HINT: if you pass an empty token to firebase then
+    //       the notification will not be sent due to an error.
     tokens = filterTokens(tokens);
 
-    let payload = {
+    // Construct the payload of the notification
+    const payload = {
       data: {},
       notification: {
         title,
@@ -25,6 +30,7 @@ module.exports.sendPushNotification = (
       },
     };
 
+    // Send notification to users
     fcm.sendToMultipleToken(payload, tokens, callback);
   } catch (err) {
     throw err;

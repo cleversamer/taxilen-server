@@ -94,9 +94,9 @@ module.exports.sendNotification = async (req, res, next) => {
       bodyAR
     );
 
-    await usersService.sendNotification(userIds, notification);
-
     res.status(httpStatus.OK).json(notification);
+
+    await usersService.sendNotification(userIds, notification);
   } catch (err) {
     next(err);
   }

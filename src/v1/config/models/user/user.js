@@ -5,6 +5,9 @@ module.exports = {
     nsn: { minLength: 4, maxLength: 13 },
   },
   deviceToken: { minLength: 0, maxLength: 1024, default: "" },
+  // Referral code must be an even number
+  referralCode: { exactLength: 14 },
+  rewardAmountForReferral: 5,
   // First role in this array === default role
   roles: ["user", "admin"],
   registerRoles: ["user"],
@@ -30,4 +33,5 @@ module.exports = {
   link: { minLength: 15, maxLength: 2048 },
   notificationTitle: { min: 3, max: 128 },
   notificationBody: { min: 3, max: 265 },
+  maxRequestsCountForInactiveUsers: 5,
 };

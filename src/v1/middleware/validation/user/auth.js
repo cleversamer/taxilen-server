@@ -2,6 +2,10 @@ const commonMiddleware = require("../common");
 
 module.exports.validateRegisterWithEmail = [
   commonMiddleware.conditionalCheck("lang", commonMiddleware.checkLanguage),
+  commonMiddleware.conditionalCheck(
+    "referralCode",
+    commonMiddleware.checkLanguage
+  ),
   commonMiddleware.checkName,
   commonMiddleware.checkForRealName("name"),
   commonMiddleware.checkEmail,
@@ -18,6 +22,10 @@ module.exports.validateRegisterWithEmail = [
 
 module.exports.validateRegisterWithGoogle = [
   commonMiddleware.conditionalCheck("lang", commonMiddleware.checkLanguage),
+  commonMiddleware.conditionalCheck(
+    "referralCode",
+    commonMiddleware.checkLanguage
+  ),
   commonMiddleware.checkPhoneICC,
   commonMiddleware.checkPhoneNSN,
   commonMiddleware.conditionalCheck(

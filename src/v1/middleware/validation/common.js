@@ -74,6 +74,13 @@ module.exports.checkAuthType = check("authType")
   .isIn(userValidation.authTypes)
   .withMessage(errors.user.invalidAuthType);
 
+module.exports.checkReferralCode = check("referralCode")
+  .isLength({
+    min: userValidation.referralCode.exactLength,
+    max: userValidation.referralCode.exactLength,
+  })
+  .withMessage(errors.user.invalidReferralCode);
+
 module.exports.checkPassword = check("password")
   .trim()
   .isLength({

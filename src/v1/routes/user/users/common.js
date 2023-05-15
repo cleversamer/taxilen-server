@@ -65,6 +65,18 @@ module.exports = (router) => {
     usersController.clearNotifications
   );
 
+  router.patch(
+    "/notifications/disable",
+    auth("updateOwn", "notification"),
+    usersController.disableNotifications
+  );
+
+  router.patch(
+    "/notifications/enable",
+    auth("updateOwn", "notification"),
+    usersController.enableNotifications
+  );
+
   //////////////////// ACCOUNT DELETION ////////////////////
   router.get(
     "/account/deletion/request",

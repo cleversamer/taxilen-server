@@ -20,6 +20,7 @@ module.exports.exportUsersToExcelFile = async (users = []) => {
       "البريد الإلكتروني",
       "رقم الهاتف",
       "نوع الحساب",
+      "الرصيد",
       "البريد مفعّل",
       "رقم الهاتف مفعّل",
       "عدد الإشعارات",
@@ -28,34 +29,58 @@ module.exports.exportUsersToExcelFile = async (users = []) => {
       "مسجّل بواسطة",
       "يملك كلمة مرور",
       "اللغة المفضّلة",
+      "وضع العرض",
       "عدد النشاطات داخل التطبيق",
+      "رمز الإحالة",
+      "عدد الإحالات",
+      "رابط Instagram",
+      "رابط Twitter",
+      "رابط LinkedIn",
+      "رابط Facebook",
+      "رابط Youtube",
+      "رابط Website",
+      "رابط Other",
       "آخر دخول",
       "الحساب محذوف",
       "رابط الصورة الشخصيّة",
     ]);
 
     // Add row for each user in the Database
-    users.forEach(function (user) {
-      const seenNotifications = user.notifications.filter((n) => n.seen).length;
-      const unseenNotifications = user.notifications.length - seenNotifications;
+    users.forEach((user) => {
+      const seenNotifications = user
+        .getNotifications()
+        .filter((n) => n.seen).length;
+      const unseenNotifications =
+        user.getNotifications().length - seenNotifications;
 
       worksheet.addRow([
-        user.name,
-        user.email,
-        user.phone.full,
-        user.role === "user" ? "مستخدم" : "آدمن",
-        user.verified.email ? "نعم" : "لا",
-        user.verified.phone ? "نعم" : "لا",
-        user.notifications.length,
+        user.getName(),
+        user.getEmail(),
+        user.getPhone(),
+        user.getRole() === "user" ? "مستخدم" : "آدمن",
+        user.getBalance(),
+        user.isEmailVerified() ? "نعم" : "لا",
+        user.isPhoneVerified() ? "نعم" : "لا",
+        user.getNotifications().length,
         seenNotifications,
         unseenNotifications,
-        user.authType === "email" ? "البريد الإلكتروني" : "حساب جوجل",
+        user.getAuthType() === "email" ? "البريد الإلكتروني" : "حساب جوجل",
         user.password ? "نعم" : "لا",
-        user.favLang === "en" ? "الإنجليزية" : "العربية",
-        user.noOfRequests,
-        user.lastLogin.toLocaleString(),
-        user.isDeleted ? "نعم" : "لا",
-        user.avatarURL,
+        user.getLanguage() === "en" ? "الإنجليزية" : "العربية",
+        user.getDisplayMode(),
+        user.getNoOfRequests(),
+        user.getReferralCode(),
+        user.getNoOfReferrals(),
+        user.getLink("instagram") || "لا يوجد",
+        user.getLink("twitter") || "لا يوجد",
+        user.getLink("linkedin") || "لا يوجد",
+        user.getLink("facebook") || "لا يوجد",
+        user.getLink("youtube") || "لا يوجد",
+        user.getLink("website") || "لا يوجد",
+        user.getLink("other") || "لا يوجد",
+        user.getLastLogin().toLocaleString(),
+        user.isDeleted() ? "نعم" : "لا",
+        user.getAvatarURL() || "لا يوجد",
       ]);
     }, "i");
 
@@ -108,7 +133,7 @@ module.exports.exportReviewsToExcelFile = async (reviews = []) => {
     ]);
 
     // Add row for each user in the Database
-    reviews.forEach(function (review) {
+    reviews.forEach((review) => {
       const date = `${review.date.toDateString()} ${review.date.toLocaleTimeString()}`;
 
       worksheet.addRow([
@@ -170,7 +195,7 @@ module.exports.exportErrorsToExcelFile = async (errors = []) => {
     ]);
 
     // Add row for each user in the Database
-    errors.forEach(function (error) {
+    errors.forEach((error) => {
       const date = `${error.date.toDateString()} ${error.date.toLocaleTimeString()}`;
 
       worksheet.addRow([
@@ -239,7 +264,7 @@ module.exports.exportLoginActivitiesToExcelFile = async (
     ]);
 
     // Add row for each user in the Database
-    loginActivities.forEach(function (loginActivity) {
+    loginActivities.forEach((loginActivity) => {
       const date = `${loginActivity.date.toDateString()} ${loginActivity.date.toLocaleTimeString()}`;
       const location = `${loginActivity.location.country} ${loginActivity.location.city}`;
       const engine = `${loginActivity.engine.name} ${loginActivity.engine.version}`;

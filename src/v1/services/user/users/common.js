@@ -491,6 +491,34 @@ module.exports.clearNotifications = async (user) => {
   }
 };
 
+module.exports.disableNotifications = async (user) => {
+  try {
+    // Disable notifications for user
+    user.disableNotifications();
+
+    // Save the user
+    await user.save();
+
+    return user;
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports.enableNotifications = async (user) => {
+  try {
+    // Disable notifications for user
+    user.enableNotifications();
+
+    // Save the user
+    await user.save();
+
+    return user;
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports.requestAccountDeletion = async (user) => {
   try {
     // Update user's account deletion code

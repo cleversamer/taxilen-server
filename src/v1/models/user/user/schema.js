@@ -13,6 +13,8 @@ module.exports.client = [
   "links",
   "display",
   "notifications",
+  "balance",
+  "referral",
   "lastLogin",
 ];
 
@@ -171,8 +173,36 @@ module.exports.mongodb = new Schema(
     },
     // The notifications of the user
     notifications: {
-      type: Array,
-      default: [],
+      active: {
+        type: Boolean,
+        default: true,
+      },
+      list: {
+        type: Array,
+        default: [],
+        minLength: 0,
+        maxLength: config.maxNotificationsCount,
+      },
+    },
+    // User's balance
+    balance: {
+      type: Number,
+      default: 0,
+    },
+    // User's referral code
+    referral: {
+      number: {
+        type: Number,
+        default: 0,
+      },
+      code: {
+        type: String,
+        required: true,
+        trim: true,
+        unique: true,
+        minlength: config.referralCode.exactLength,
+        maxlength: config.referralCode.exactLength,
+      },
     },
     // The device token of the user (Used for sending notifications to it)
     deviceToken: {

@@ -17,6 +17,7 @@ module.exports = Object.freeze({
   },
   notification: {
     "read:own": ["*"],
+    "update:own": ["*"],
     "delete:own": ["*"],
   },
   loginActivity: {

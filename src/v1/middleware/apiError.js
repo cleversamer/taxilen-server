@@ -11,10 +11,14 @@ module.exports.ApiError = class ApiError extends Error {
 };
 
 module.exports.errorHandler = (err, req, res, next) => {
-  res.status(err.statusCode).json({
-    status: "error",
-    ...err,
-  });
+  try {
+    res.status(err.statusCode).json({
+      status: "error",
+      ...err,
+    });
+  } catch (err) {
+    return;
+  }
 };
 
 module.exports.errorConverter = async (err, req, res, next) => {
@@ -35,6 +39,12 @@ module.exports.errorConverter = async (err, req, res, next) => {
 
   // Pass the execution to the next middleware
   next(err);
+
+  // Check if the error is an instance of `ApiError`
+  if (!(err instanceof this.ApiError)) {
+    // Write error to the DB
+    await errorsService.storeError(err, req);
+  }
 };
 
 module.exports.unsupportedRouteHandler = (req, res, next) => {

@@ -2,6 +2,7 @@ const {
   notificationTitle,
   notificationBody,
   link,
+  referralCode,
 } = require("../../models/user/user");
 
 module.exports = Object.freeze({
@@ -108,5 +109,9 @@ module.exports = Object.freeze({
   newEmailMatchesPrev: {
     en: "The new email matches the previous email",
     ar: "البريد الإلكتروني الجديد يطابق البريد الإلكتروني السابق",
+  },
+  invalidReferralCode: {
+    en: `Referral code must be ${referralCode.exactLength.toLocaleString()} characters`,
+    ar: `رمز الإحالة يجب أن يكون ${referralCode.exactLength.toLocaleString()} حرفًا`,
   },
 });

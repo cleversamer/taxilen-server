@@ -26,7 +26,7 @@ module.exports = (app) => {
     console.log(`App is listening on port ${server.PORT}`);
   });
 
-  socket(expressServer);
+  socket.init(expressServer);
 
   setupScheduling();
 };

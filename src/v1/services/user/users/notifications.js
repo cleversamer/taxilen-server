@@ -2,16 +2,52 @@ const { User } = require("../../../models/user/user");
 const notificationsService = require("../../cloud/notifications");
 const serverErrorsService = require("../../system/serverErrors");
 const innerServices = require("./inner");
+const { user: userConfig } = require("../../../config/models");
+const { getIO } = require("../../../setup/socket");
 const {
   user: userNotifications,
   admin: adminNotifications,
 } = require("../../../config/notifications");
 
+module.exports.notifyInactiveUsers = async () => {
+  try {
+    // Find users with unseen notifications
+    const users = await User.find({
+      noOfRequests: { $lte: userConfig.maxRequestsCountForInactiveUsers },
+      role: { $not: { $eq: "admin" } },
+    });
+
+    // Check if there are users with unseen notifications
+    if (!users || !users.length) {
+      return;
+    }
+
+    // Create the notification
+    const notification = userNotifications.inactiveUser();
+
+    // Pick only users that they haven't received this notification
+    const userIds = users
+      .filter((user) => !user.hasReceivedNotification(notification))
+      .map((user) => user._id);
+
+    // Check if there are users that they haven't received
+    // this notification yet.
+    if (!userIds || !userIds.length) {
+      return;
+    }
+
+    // Send notification to users devices
+    await this.sendNotification(userIds, notification);
+  } catch (err) {
+    return;
+  }
+};
+
 module.exports.notifyUsersWithUnseenNotifications = async () => {
   try {
     // Find users with unseen notifications
     const users = await User.find({
-      notifications: { $elemMatch: { seen: false } },
+      "notifications.list": { $elemMatch: { seen: false } },
     });
 
     // Check if there are users with unseen notifications
@@ -60,8 +96,8 @@ module.exports.notifyAdminsWithServerErrors = async () => {
 
     // Pick only users that they haven't received this notification
     const adminIds = admins
-      .filter((user) => !user.hasReceivedNotification(notification))
-      .map((user) => user._id);
+      .filter((admin) => !admin.hasReceivedNotification(notification))
+      .map((admin) => admin._id);
 
     // Check if there are users that they haven't received
     // this notification yet.
@@ -92,29 +128,45 @@ module.exports.sendNotification = async (userIds, notification, callback) => {
     }
 
     // Get users' tokens and add notification to them
-    const tokens = users.map(async (user) => {
-      try {
-        // Add notification to user
-        user.addNotification(notification);
+    const mappedUsers = users
+      .map(async (user) => {
+        try {
+          // Add notification to user
+          user.addNotification(notification);
 
-        // Save user to the BB
-        await user.save();
+          // Save user to the BB
+          await user.save();
 
-        return { lang: user.getLanguage(), value: user.getDeviceToken() };
-      } catch (err) {
-        return "";
-      }
-    });
+          return {
+            lang: user.getLanguage(),
+            token: user.getDeviceToken(),
+            active: user.isNotificationsActive(),
+          };
+        } catch (err) {
+          return {};
+        }
+      })
+      .filter((user) => user.isNotificationsActive);
 
     // Get device tokens for english users
-    const enTokens = tokens
-      .filter((token) => token.lang === "en")
-      .map((token) => token.value);
+    const enTokens = mappedUsers
+      .filter((user) => user.lang === "en")
+      .map((user) => user.token);
 
     // Get device tokens for arabic users
-    const arTokens = tokens
-      .filter((token) => token.lang === "ar")
-      .map((token) => token.value);
+    const arTokens = mappedUsers
+      .filter((user) => user.lang === "ar")
+      .map((user) => user.token);
+
+    // Send notifications to users by socket
+    userIds.forEach((userId) => {
+      try {
+        getIO().to(userId).emit("notification received", notification);
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+    });
 
     // Send notification to english users
     notificationsService.sendPushNotification(
@@ -147,34 +199,51 @@ module.exports.sendNotificationToAdmins = async (notification, callback) => {
 
     // Check if there are admins
     const admins = await innerServices.findAdmins();
-    if (!admins.length) {
+    if (!admins || !admins.length) {
       return;
     }
 
     // Get admins' tokens and add notification to them
-    const tokens = admins.map(async (admin) => {
-      try {
-        // Add the notification to user's notifications array
-        admin.addNotification(notification);
+    const mappedAdmins = admins
+      .map(async (admin) => {
+        try {
+          // Add the notification to user's notifications array
+          admin.addNotification(notification);
 
-        // Save the user to the database
-        await admin.save();
+          // Save the user to the database
+          await admin.save();
 
-        return { lang: admin.favLang, value: admin.deviceToken };
-      } catch (err) {
-        return "";
-      }
-    });
+          return {
+            lang: admin.getLanguage(),
+            token: admin.getDeviceToken(),
+            isNotificationsActive: admin.isNotificationsActive(),
+          };
+        } catch (err) {
+          return {};
+        }
+      })
+      .filter((admin) => admin.isNotificationsActive);
 
     // Get device tokens for english users
-    const enTokens = tokens
-      .filter((token) => token.lang === "en")
-      .map((token) => token.value);
+    const enTokens = mappedAdmins
+      .filter((admin) => admin.lang === "en")
+      .map((admin) => admin.token);
 
     // Get device tokens for arabic users
-    const arTokens = tokens
-      .filter((token) => token.lang === "ar")
-      .map((token) => token.value);
+    const arTokens = mappedAdmins
+      .filter((admin) => admin.lang === "ar")
+      .map((admin) => admin.token);
+
+    // Send notifications to users by socket
+    admins.forEach((admin) => {
+      try {
+        getIO()
+          .to(admin._id.toString())
+          .emit("notification received", notification);
+      } catch (err) {
+        throw err;
+      }
+    });
 
     // Send notification to english users
     notificationsService.sendPushNotification(

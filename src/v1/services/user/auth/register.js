@@ -54,6 +54,10 @@ module.exports.registerWithEmail = async (
     // Set user's password
     await user.updatePassword(password);
 
+    // Set user's referral code
+    const referralCode = await usersService.genUniqueReferralCode();
+    user.setReferralCode(referralCode);
+
     // Set user's email verification code
     user.updateCode("email");
 

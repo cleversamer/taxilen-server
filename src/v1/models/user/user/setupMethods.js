@@ -143,36 +143,44 @@ module.exports = (mongodbSchema) => {
     return this.display.language;
   };
 
+  //////////////////////// DISPLAY MODE ////////////////////////
+  mongodbSchema.methods.getDisplayMode = function () {
+    return this.display.mode;
+  };
+
   //////////////////////// NOTIFICATIONS ////////////////////////
   mongodbSchema.methods.addNotification = function (notification) {
     const { maxNotificationsCount } = config;
 
     // Make sure that the max notifications count is considered.
-    this.notifications = this.notifications.slice(0, maxNotificationsCount);
+    this.notifications.list = this.notifications.list.slice(
+      0,
+      maxNotificationsCount
+    );
 
     // If the max count reached then we remove the oldest one.
-    if (this.notifications.length === maxNotificationsCount) {
-      this.notifications.pop();
+    if (this.notifications.list.length === maxNotificationsCount) {
+      this.notifications.list.pop();
     }
 
     // Add the notification to the beginning of the array
-    this.notifications.unshift(notification);
+    this.notifications.list.unshift(notification);
   };
 
   mongodbSchema.methods.seeNotifications = function () {
     // Return `true` if there are no notifications
     // True means no new notifications
-    if (!this.notifications.length) {
+    if (!this.notifications.list.length) {
       return true;
     }
 
-    const list = [...this.notifications];
+    const list = [...this.notifications.list];
 
     // Declare a variable to track unseen notifications
     let isAllSeen = true;
 
     // Mark all notification as seen
-    this.notifications = this.notifications.map((n) => {
+    this.notifications.list = this.notifications.list.map((n) => {
       isAllSeen = isAllSeen && n.seen;
 
       return {
@@ -186,15 +194,15 @@ module.exports = (mongodbSchema) => {
   };
 
   mongodbSchema.methods.clearNotifications = function () {
-    const isEmpty = !this.notifications.length;
-    this.notifications = [];
+    const isEmpty = !this.notifications.list.length;
+    this.notifications.list = [];
     return isEmpty;
   };
 
   mongodbSchema.methods.hasReceivedNotification = function (notification) {
     // Check if user has received this notification
     // and didn't saw it
-    const index = this.notifications.findIndex(
+    const index = this.notifications.list.findIndex(
       (n) =>
         n.title.en === notification.title.en &&
         n.title.ar === notification.title.ar &&
@@ -209,6 +217,22 @@ module.exports = (mongodbSchema) => {
     return index >= 0;
   };
 
+  mongodbSchema.methods.isNotificationsActive = function () {
+    return this.notifications.active;
+  };
+
+  mongodbSchema.methods.getNotifications = function () {
+    return this.notifications.list;
+  };
+
+  mongodbSchema.methods.enableNotifications = function () {
+    this.notifications.active = true;
+  };
+
+  mongodbSchema.methods.disableNotifications = function () {
+    this.notifications.active = false;
+  };
+
   //////////////////////// LINKS ////////////////////////
   mongodbSchema.methods.updateLink = function (key, value) {
     this.links[key] = value;
@@ -216,6 +240,33 @@ module.exports = (mongodbSchema) => {
 
   mongodbSchema.methods.removeLink = function (key) {
     this.links[key] = "";
+  };
+
+  mongodbSchema.methods.getLink = function (key) {
+    return this.links[key];
+  };
+
+  //////////////////////// REFERRAL CODE ////////////////////////
+  mongodbSchema.methods.setReferralCode = function (referralCode) {
+    this.referral.code = referralCode;
+  };
+
+  mongodbSchema.methods.getReferralCode = function () {
+    return this.referral.code;
+  };
+
+  mongodbSchema.methods.getNoOfReferrals = function () {
+    return this.referral.number;
+  };
+
+  mongodbSchema.methods.addReferral = function () {
+    this.referral.number = this.referral.number + 1;
+    this.balance = this.balance + config.rewardAmountForReferral;
+  };
+
+  //////////////////////// BALANCE ////////////////////////
+  mongodbSchema.methods.getBalance = function () {
+    return this.balance;
   };
 
   //////////////////////// DEVICE TOKEN ////////////////////////
@@ -370,8 +421,12 @@ module.exports = (mongodbSchema) => {
     this.verification.deletion = { code: "", expiryDate: null };
   };
 
-  //////////////////////// USER'S MADE REQUESTS ////////////////////////
+  //////////////////////// USER'S REQUESTS ////////////////////////
   mongodbSchema.methods.addRequest = function () {
+    this.noOfRequests = this.noOfRequests + 1;
+  };
+
+  mongodbSchema.methods.getNoOfRequests = function () {
     this.noOfRequests = this.noOfRequests + 1;
   };
 };
