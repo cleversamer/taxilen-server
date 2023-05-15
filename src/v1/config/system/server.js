@@ -1,6 +1,6 @@
-module.exports.APP_NAME_EN = "XYZ";
+module.exports.APP_NAME_EN = "Taxilen";
 
-module.exports.APP_NAME_AR = "XYZ";
+module.exports.APP_NAME_AR = "تاكسيلين";
 
 module.exports.APP_EMAIL = "thedev.samer@gmail.com";
 
@@ -8,7 +8,7 @@ module.exports.SUPPORT_EMAIL = "thedev.samer@gmail.com";
 
 module.exports.PORT = process.env["PORT"] || 4000;
 
-module.exports.DATABASE_NAME = "demo";
+module.exports.DATABASE_NAME = "taxilen";
 
 module.exports.DATABASE_URI =
   process.env["MONGODB_URI"] ||
