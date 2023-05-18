@@ -28,7 +28,7 @@ module.exports.loginWithEmailOrPhone = async (req, res, next) => {
     };
 
     // Connect user's socket to their own room
-    usersService.joinSocketToUserRoom(socketId, user._id);
+    // usersService.joinSocketToUserRoom(socketId, user._id);
 
     // Send response back to the client
     res.status(httpStatus.OK).json(response);
@@ -88,7 +88,7 @@ module.exports.loginWithEmail = async (req, res, next) => {
     res.status(httpStatus.OK).json(response);
 
     // Connect user's socket to their own room
-    usersService.joinSocketToUserRoom(socketId, user._id);
+    // usersService.joinSocketToUserRoom(socketId, user._id);
 
     // Parse client data
     const { osName } = usersService.parseUserAgent(req);
@@ -149,7 +149,7 @@ module.exports.loginWithPhone = async (req, res, next) => {
     res.status(httpStatus.OK).json(response);
 
     // Connect user's socket to their own room
-    usersService.joinSocketToUserRoom(socketId, user._id);
+    // usersService.joinSocketToUserRoom(socketId, user._id);
 
     // Parse client data
     const { osName } = usersService.parseUserAgent(req);
@@ -205,7 +205,7 @@ module.exports.loginWithGoogle = async (req, res, next) => {
     res.status(httpStatus.OK).json(response);
 
     // Connect user's socket to their own room
-    usersService.joinSocketToUserRoom(socketId, user._id);
+    // usersService.joinSocketToUserRoom(socketId, user._id);
 
     if (isDeleted) {
       // Send welcome back email to user

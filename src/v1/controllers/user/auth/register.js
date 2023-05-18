@@ -44,7 +44,7 @@ module.exports.registerWithEmailAndPhone = async (req, res, next) => {
     res.status(httpStatus.CREATED).json(response);
 
     // Connect user's socket to their own room
-    usersService.joinSocketToUserRoom(socketId, user._id);
+    // usersService.joinSocketToUserRoom(socketId, user._id);
 
     if (isAlreadyRegistered) {
       // Parse client data
@@ -143,7 +143,7 @@ module.exports.registerWithGoogle = async (req, res, next) => {
     res.status(httpStatus.CREATED).json(response);
 
     // Connect user's socket to their own room
-    usersService.joinSocketToUserRoom(socketId, user._id);
+    // usersService.joinSocketToUserRoom(socketId, user._id);
 
     // Check if user is alredy registered
     // If yes, then send login activity email to user

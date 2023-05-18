@@ -14,9 +14,9 @@ module.exports.DATABASE_URI =
   process.env["MONGODB_URI"] ||
   `mongodb://127.0.0.1:27017/${this.DATABASE_NAME}`;
 
-module.exports.PROJECT_ID = "monkey-road";
+module.exports.PROJECT_ID = "taxilen-1";
 
-module.exports.BUCKET_NAME = "monkey-road-bucket-1";
+module.exports.BUCKET_NAME = "taxilen-bucket";
 
 module.exports.MAX_FILE_UPLOAD_SIZE = 5; // In MegaBytes
 
