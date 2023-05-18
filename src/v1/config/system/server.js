@@ -2,9 +2,9 @@ module.exports.APP_NAME_EN = "Taxilen";
 
 module.exports.APP_NAME_AR = "تاكسيلين";
 
-module.exports.APP_EMAIL = "thedev.samer@gmail.com";
+module.exports.APP_EMAIL = "taxilenapp@gmail.com";
 
-module.exports.SUPPORT_EMAIL = "thedev.samer@gmail.com";
+module.exports.SUPPORT_EMAIL = "taxilenapp@gmail.com";
 
 module.exports.PORT = process.env["PORT"] || 4000;
 
